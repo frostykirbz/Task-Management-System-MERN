@@ -1,4 +1,3 @@
-const { response } = require("express")
 var con = require("../config/config-database")
 
 function checkGroup({ username, groupname }) {

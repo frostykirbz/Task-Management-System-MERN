@@ -2,42 +2,7 @@ const con = require("../config/config-database")
 const strip = require("strip")
 const bcrypt = require("bcrypt")
 const validator = require("validator")
-
-// create task function
-const CreateTask = async (req, res) => {
-  let { username, password } = req.body
-  let { taskName, taskDescription, taskNotes, taskPlan, taskAppAcronym, taskState, taskCreator, taskOwner } = req.body
-
-  // call login promise
-  const Login = await login({ username, password })
-  const CreateTask = await createtask({ taskName, taskDescription, taskNotes, taskPlan, taskAppAcronym, taskState, taskCreator, taskOwner })
-
-  if (Login === "emptyUsername") {
-    res.send({ err: "emptyUsername", code: 4005 })
-  } else if (Login === "whitespaceUsername") {
-    res.send({ err: "whitespaceUsername", code: 4005 })
-  } else if (Login === "emptyPassword") {
-    res.send({ err: "emptyPassword", code: 4005 })
-  } else if (Login === "denyLoginPermission") {
-    res.send({ err: "denyLoginPermission", code: 4002 })
-  } else if (Login === "invalidLogin") {
-    res.send({ err: "invalidLogin", code: 4001 })
-  } else {
-    if (CreateTask === "emptyTaskName") {
-      res.send({ err: "emptyTaskName", code: 4005 })
-    } else if (CreateTask === "duplicatedTaskName") {
-      res.send({ err: "duplicatedTaskName", code: 4005 })
-    } else if (CreateTask === "emptyTaskDescription") {
-      res.send({ err: "emptyTaskDescription", code: 4005 })
-    } else if (CreateTask === "emptyTaskAppAcronym") {
-      res.send({ err: "emptyTaskAppAcronym", code: 4005 })
-    } else if (CreateTask === "invalidTaskAppAcronym") {
-      res.send({ err: "invalidTaskAppAcronym", code: 4005 })
-    } else {
-      res.send({ err: "success", code: 200 })
-    }
-  }
-}
+const { checkGroup } = require("../controllers/GroupCheckController")
 
 function checkUsernameFormat(username) {
   var whitespace = /^\S*$/
@@ -48,45 +13,117 @@ function checkUsernameFormat(username) {
   }
 }
 
-// Login promise (POST method)
-function login({ username, password }) {
+// Check App Permit Create
+function checkAppPermitCreate(application) {
+  let permitCreate = ""
+  const appPermitCreate = `SELECT *
+                           FROM application 
+                           WHERE App_Acronym = ?`
+
+  con.query(appPermitCreate, [application], function (err, rows) {
+    if (err) throw err
+    if (rows.length > 0) {
+      permitCreate = rows[0].App_permit_Create
+    }
+
+    return permitCreate
+  })
+}
+
+// create task function (POSTMAN - POST METHOD)
+const CreateTaskAPI = async (req, res) => {
+  try {
+    // declare variables for Login and CreateTask
+    let createTaskInfo = req.body
+    let { Task_plan, Task_notes } = req.body
+
+    // setting JSON keys to lower case
+    for (let key in req.body) {
+      createTaskInfo[key.toLowerCase()] = req.body[key]
+    }
+
+    let username = createTaskInfo.username
+    let Task_name = createTaskInfo.task_name
+    let Task_description = createTaskInfo.task_description
+    let Task_app_Acronym = createTaskInfo.task_app_Acronym
+    let Task_state = "Open"
+    let Task_creator = createTaskInfo.username
+    let Task_owner = createTaskInfo.username
+    let permitCreate = checkAppPermitCreate(Task_app_Acronym)
+
+    console.log(permitCreate)
+    // call all required promises (login/checkgroup/createtask)
+    const Login = await login(createTaskInfo)
+    const userGroup = await checkGroup(username, permitCreate)
+    const success = await createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, Task_creator, Task_owner)
+
+    console.log(userGroup)
+
+    // Login: if user is authenticated (success)
+    if (Login.code === 200) {
+      console.log("login")
+      try {
+        // Check App Permit Create: if user is in app permit create (success)
+
+        // Create Task: if create task validation errors are none (success)
+        if (success.code === 200) {
+          res.send({ success })
+        }
+      } catch (error) {
+        // Create Task: error (fail)
+        res.send({ error })
+      }
+    }
+  } catch (error) {
+    // Login: error (fail)
+    res.send({ error })
+  }
+}
+
+// Login (PROMISE)
+function login(JSON) {
   return new Promise((resolve, reject) => {
     // declare variables
+    let username = JSON.username
+    let password = JSON.password
     let email = ""
     let isactive = ""
     let usergroup = ""
+
+    if (
+      !JSON.hasOwnProperty("username") ||
+      !JSON.hasOwnProperty("password") ||
+      !JSON.hasOwnProperty("task_name") ||
+      !JSON.hasOwnProperty("task_description") ||
+      !JSON.hasOwnProperty("task_app_acronym")
+    ) {
+      return reject({ code: 4008 })
+    }
 
     // LOGIN - VALIDATION
     // remove all leading and trailing spaces/tabs
     username = strip(username)
     password = strip(password)
 
-    // await promise
-    // check for result with if statement const = false
-    // if false return next
-    // if true res.send
-
-    // return resolve("empty password")
-
     // check username (empty field)
     if (validator.isEmpty(username)) {
-      return resolve("emptyUsername")
+      return reject({ msg: "Empty Username", code: 4006 })
     }
 
     // check username (whitespace)
     if (!checkUsernameFormat(username)) {
-      return resolve("whitespaceUsername")
+      return reject({ msg: "Whitespace Username", code: 4005 })
     }
 
     // check password (empty field)
     if (validator.isEmpty(password)) {
-      return resolve("emptyPassword")
+      return reject({ msg: "Empty Password", code: 4006 })
     }
 
     if (username && password) {
       const checkLogin = `SELECT password, email, isactive, usergroup
-                            FROM accounts
-                            WHERE username = ?`
+                          FROM accounts
+                          WHERE username = ?`
 
       con.query(checkLogin, [username], async function (err, rows) {
         if (err) reject(err)
@@ -97,8 +134,8 @@ function login({ username, password }) {
           // if valid password (matches hash password in database)
           if (passwordCheck) {
             const checkUser = `SELECT username, password, email, isactive, usergroup
-                              FROM accounts
-                              WHERE accounts.username = ?`
+                               FROM accounts
+                               WHERE accounts.username = ?`
 
             con.query(checkUser, [username], async function (err, rows) {
               if (err) reject(err)
@@ -115,7 +152,7 @@ function login({ username, password }) {
                 // check if user is inactive
                 // if user is inactive (deny login)
                 if (isactive == "Inactive") {
-                  return resolve("denyLoginPermission")
+                  return reject({ msg: "Deny Permission", code: 4002 })
                 }
                 // if user is active (approve login)
                 else if (isactive == "Active") {
@@ -126,25 +163,25 @@ function login({ username, password }) {
                     isactive: isactive,
                     usergroup: usergroup
                   }
-                  return resolve(userInfo)
+                  return resolve({ code: 200 })
                 }
               } else {
-                return resolve("invalidLogin")
+                return reject({ msg: "Invalid Login", code: 4001 })
               }
             })
           } else {
-            return resolve("invalidLogin")
+            return reject({ msg: "Invalid Login", code: 4001 })
           }
         } else {
-          return resolve("invalidLogin")
+          return reject({ msg: "Invalid Login", code: 4001 })
         }
       })
     }
   })
 }
 
-// Create Task
-function createtask({ taskName, taskDescription, taskNotes, taskPlan, taskAppAcronym, taskState, taskCreator, taskOwner }) {
+// Create Task (PROMISE)
+function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, Task_creator, Task_owner) {
   return new Promise((resolve, reject) => {
     let planColor = ""
     let rNumber = 0
@@ -177,9 +214,9 @@ function createtask({ taskName, taskDescription, taskNotes, taskPlan, taskAppAcr
     let datetime = day + "-" + month + "-" + year + " " + hours + ":" + minutes + ":" + seconds
 
     // remove all leading and trailing spaces and tabs
-    taskName = strip(taskName)
-    taskDescription = strip(taskDescription)
-    taskNotes = strip(taskNotes)
+    Task_name = strip(Task_name)
+    Task_description = strip(Task_description)
+    Task_notes = strip(Task_notes)
 
     // CREATE NEW TASK - VALIDATION
     // check task name - if task name is emptyfield and duplicated
@@ -188,205 +225,199 @@ function createtask({ taskName, taskDescription, taskNotes, taskPlan, taskAppAcr
     // check task notes - if there is task notes/there is no task notes
 
     // check for empty task name
-    if (validator.isEmpty(taskName)) {
-      return resolve("emptyTaskName")
+    if (validator.isEmpty(Task_name)) {
+      return reject({ msg: "Empty task name", code: 4006 })
     }
     // if task name is not empty
     else {
       // check for duplicated task name
       const checkTaskName = `SELECT *
-                           FROM task
-                           WHERE Task_name = ?`
-      con.query(checkTaskName, [taskName], function (err, rows) {
-        if (err) throw err
+                             FROM task
+                             WHERE Task_name = ?`
+      con.query(checkTaskName, [Task_name], function (err, rows) {
+        if (err) reject(err)
         // if task name exists in database (duplicated task name)
         if (rows.length > 0) {
-          return resolve("duplicatedTaskName")
+          return reject({ msg: "Duplicated Taskname", code: 4003 })
         }
         // if task name does not exist in database (can use this task name)
         else {
-          // check for empty task description
-          if (validator.isEmpty(taskDescription)) {
-            return resolve("emptyTaskDescription")
+          // check for empty task app acronym
+          if (validator.isEmpty(Task_app_Acronym)) {
+            return reject({ msg: "Empty Task App Acronym", code: 4006 })
           }
-          // if task description is not empty
-          else {
-            // check for empty task app acronym
-            if (validator.isEmpty(taskAppAcronym)) {
-              return resolve("emptyTaskAppAcronym")
-            }
 
-            // check for empty task plan
-            // if task plan is empty, set its value as null
-            if (taskPlan === "") {
-              taskPlan = null
-            }
+          // check for empty task plan
+          // if task plan is empty, set its value as null
+          if (Task_plan === "") {
+            Task_plan = null
+          }
 
-            // check task plan color
-            const getPlanColor = `SELECT plan.Plan_color 
+          // check task plan color
+          const getPlanColor = `SELECT plan.Plan_color 
                                   FROM plan
                                   WHERE Plan_MVP_name = ?
                                   AND Plan_app_Acronym = ?`
-            con.query(getPlanColor, [taskPlan, taskAppAcronym], function (err, rows) {
-              if (err) reject(err)
-              // if there is a plan color (set database plan color value)
-              if (rows.length > 0) {
-                planColor = rows[0].Plan_color
-              }
-              // if there is no plan color (set default plan color value as light grey)
-              else {
-                planColor = ""
-              }
+          con.query(getPlanColor, [Task_plan, Task_app_Acronym], function (err, rows) {
+            if (err) reject(err)
+            // if there is a plan color (set database plan color value)
+            if (rows.length > 0) {
+              planColor = rows[0].Plan_color
+            }
+            // if there is no plan color (set default plan color value as light grey)
+            else {
+              planColor = ""
+            }
 
-              // check for existing task
-              const checkTask = `SELECT * 
+            // check for existing task
+            const checkTask = `SELECT * 
                                  FROM task 
                                  WHERE Task_app_Acronym = ?`
-              con.query(checkTask, [taskAppAcronym], function (err, rows) {
-                if (err) reject(err)
-                // if task exists in database
-                if (rows.length > 0) {
-                  // get app rnumber
-                  const getAppRNumber = `SELECT App_Rnumber
+            con.query(checkTask, [Task_app_Acronym], function (err, rows) {
+              if (err) reject(err)
+              // if task exists in database
+              if (rows.length > 0) {
+                // get app rnumber
+                const getAppRNumber = `SELECT App_Rnumber
                                          FROM application
                                          WHERE App_Acronym = ?`
 
-                  con.query(getAppRNumber, [taskAppAcronym], function (err, rows) {
-                    if (err) reject(err)
+                con.query(getAppRNumber, [Task_app_Acronym], function (err, rows) {
+                  if (err) reject(err)
 
-                    if (rows.length > 0) {
-                      // get latest app rnumber and create task id (app_acronym and app rnumber)
-                      rNumber = rows[0].App_Rnumber + 1
-                      taskID = taskAppAcronym + "_" + rNumber
-                    } else {
-                      return resolve("invalidTaskAppAcronym")
-                    }
+                  if (rows.length > 0) {
+                    // get latest app rnumber and create task id (app_acronym and app rnumber)
+                    rNumber = rows[0].App_Rnumber + 1
+                    taskID = Task_app_Acronym + "_" + rNumber
+                  } else {
+                    console.log("Here 666")
+                    return reject({ msg: "Invalid Task App Acronym", code: 4005 })
+                  }
 
-                    // check for added task notes
-                    if (taskNotes) {
-                      // format task notes with header (datetime, task state, task owner)
-                      formattedTaskNotes = "[" + datetime + "\tTask State: " + taskState + "\t Task Owner: " + taskOwner + "]\n" + taskNotes + "\n"
+                  // check for added task notes
+                  if (Task_notes) {
+                    // format task notes with header (datetime, task state, task owner)
+                    formattedTaskNotes = "[" + datetime + "\tTask State: " + Task_state + "\t Task Owner: " + Task_owner + "]\n" + Task_notes + "\n"
 
-                      // insert task with formatted task notes into task table
-                      const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
-                      con.query(
-                        addTask,
-                        [taskName, taskDescription, formattedTaskNotes, taskID, taskPlan, taskAppAcronym, taskState, taskCreator, taskOwner, planColor],
-                        console.log("Created Task with task notes.")
-                      )
+                    // insert task with formatted task notes into task table
+                    const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
+                    con.query(
+                      addTask,
+                      [Task_name, Task_description, formattedTaskNotes, taskID, Task_plan, Task_app_Acronym, Task_state, Task_creator, Task_owner, planColor],
+                      console.log("Created Task with task notes.")
+                    )
 
-                      // insert into task notes table
-                      const addTaskNotes = `INSERT INTO tasknotes (Task_name, Task_plan, Task_app, Task_notes, Task_state, Task_owner, Task_updateDate) VALUES (?, ?, ?, ?, ?, ?, now())`
-                      con.query(addTaskNotes, [taskName, taskPlan, taskAppAcronym, taskNotes, taskState, taskOwner], console.log("Added task notes."))
+                    // insert into task notes table
+                    const addTaskNotes = `INSERT INTO tasknotes (Task_name, Task_plan, Task_app, Task_notes, Task_state, Task_owner, Task_updateDate) VALUES (?, ?, ?, ?, ?, ?, now())`
+                    con.query(addTaskNotes, [Task_name, Task_plan, Task_app_Acronym, Task_notes, Task_state, Task_owner], console.log("Added task notes."))
 
-                      // update latest app rnumber in application table
-                      const updateAppRNumber = `UPDATE application SET App_Rnumber = ? WHERE App_Acronym = ?`
-                      con.query(updateAppRNumber, [rNumber, taskAppAcronym], console.log("Updated App rnumber."))
-                    }
+                    // update latest app rnumber in application table
+                    const updateAppRNumber = `UPDATE application SET App_Rnumber = ? WHERE App_Acronym = ?`
+                    con.query(updateAppRNumber, [rNumber, Task_app_Acronym], console.log("Updated App rnumber."))
+                  }
 
-                    // if task notes is empty (user did not write anything)
-                    else {
-                      // insert task with formatted task notes into task table
-                      const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
-                      con.query(
-                        addTask,
-                        [taskName, taskDescription, taskNotes, taskID, taskPlan, taskAppAcronym, taskState, taskCreator, taskOwner, planColor],
-                        console.log("Created Task with no task notes.")
-                      )
+                  // if task notes is empty (user did not write anything)
+                  else {
+                    // insert task with formatted task notes into task table
+                    const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
+                    con.query(
+                      addTask,
+                      [Task_name, Task_description, Task_notes, taskID, Task_plan, Task_app_Acronym, Task_state, Task_creator, Task_owner, planColor],
+                      console.log("Created Task with no task notes.")
+                    )
 
-                      // update latest app rnumber in application table
-                      const updateAppRNumber = `UPDATE application SET App_Rnumber = ? WHERE App_Acronym = ?`
-                      con.query(updateAppRNumber, [rNumber, taskAppAcronym], console.log("Updated App rnumber."))
-                    }
+                    // update latest app rnumber in application table
+                    const updateAppRNumber = `UPDATE application SET App_Rnumber = ? WHERE App_Acronym = ?`
+                    con.query(updateAppRNumber, [rNumber, Task_app_Acronym], console.log("Updated App rnumber."))
+                  }
 
-                    // send to frontend
-                    const taskInfo = {
-                      taskName: taskName,
-                      taskDescription: taskDescription,
-                      taskNotes: taskNotes,
-                      taskID: taskID,
-                      taskPlan: taskPlan,
-                      taskAppAcronym: taskAppAcronym,
-                      taskState: taskState,
-                      taskCreator: taskCreator,
-                      taskOwner: taskOwner,
-                      planColor: planColor
-                    }
+                  // send to frontend
+                  const taskInfo = {
+                    Task_name: Task_name,
+                    Task_description: Task_description,
+                    Task_notes: Task_notes,
+                    Task_id: taskID,
+                    Task_plan: Task_plan,
+                    Task_app_Acronym: Task_app_Acronym,
+                    Task_state: Task_state,
+                    Task_creator: Task_creator,
+                    Task_owner: Task_owner,
+                    planColor: planColor
+                  }
 
-                    return resolve(taskInfo)
-                  })
-                }
-                // if no task exists in database (first task)
-                else {
-                  // get app rnumber
-                  const getAppRNumber = `SELECT App_Rnumber
+                  return resolve({ code: 200, Task_id: taskID })
+                })
+              }
+              // if no task exists in database (first task)
+              else {
+                // get app rnumber
+                const getAppRNumber = `SELECT App_Rnumber
                                          FROM application
                                          WHERE App_Acronym = ?`
 
-                  con.query(getAppRNumber, [taskAppAcronym], function (err, rows) {
-                    if (err) reject(err)
+                con.query(getAppRNumber, [Task_app_Acronym], function (err, rows) {
+                  if (err) reject(err)
 
-                    if (rows.length > 0) {
-                      // get app rnumber and create task id (app_acronym and app rnumber)
-                      rNumber = rows[0].App_Rnumber
-                      taskID = taskAppAcronym + "_" + rNumber
-                    } else {
-                      return resolve("invalidTaskAppAcronym")
-                    }
+                  if (rows.length > 0) {
+                    // get app rnumber and create task id (app_acronym and app rnumber)
+                    rNumber = rows[0].App_Rnumber
+                    taskID = Task_app_Acronym + "_" + rNumber
+                  } else {
+                    return reject({ msg: "Invalid Task App Acronym", code: 4005 })
+                  }
 
-                    // check for added task notes
-                    if (taskNotes) {
-                      // format task notes with header (datetime, task state, task owner)
-                      formattedTaskNotes = "[" + datetime + "\tTask State: " + taskState + "\t Task Owner: " + taskOwner + "]\n" + taskNotes + "\n"
+                  // check for added task notes
+                  if (Task_notes) {
+                    // format task notes with header (datetime, task state, task owner)
+                    formattedTaskNotes = "[" + datetime + "\tTask State: " + Task_state + "\t Task Owner: " + Task_owner + "]\n" + Task_notes + "\n"
 
-                      // insert task with formatted task notes into task table
-                      const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
-                      con.query(
-                        addTask,
-                        [taskName, taskDescription, formattedTaskNotes, taskID, taskPlan, taskAppAcronym, taskState, taskCreator, taskOwner, planColor],
-                        console.log("Created Task with task notes.")
-                      )
+                    // insert task with formatted task notes into task table
+                    const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
+                    con.query(
+                      addTask,
+                      [Task_name, Task_description, formattedTaskNotes, taskID, Task_plan, Task_app_Acronym, Task_state, Task_creator, Task_owner, planColor],
+                      console.log("Created Task with task notes.")
+                    )
 
-                      // insert into task notes table
-                      const addTaskNotes = `INSERT INTO tasknotes (Task_name, Task_plan, Task_app, Task_notes, Task_state, Task_owner, Task_updateDate) VALUES (?, ?, ?, ?, ?, ?, now())`
-                      con.query(addTaskNotes, [taskName, taskPlan, taskAppAcronym, taskNotes, taskState, taskOwner], console.log("Added task notes."))
-                    }
+                    // insert into task notes table
+                    const addTaskNotes = `INSERT INTO tasknotes (Task_name, Task_plan, Task_app, Task_notes, Task_state, Task_owner, Task_updateDate) VALUES (?, ?, ?, ?, ?, ?, now())`
+                    con.query(addTaskNotes, [Task_name, Task_plan, Task_app_Acronym, Task_notes, Task_state, Task_owner], console.log("Added task notes."))
+                  }
 
-                    // if task notes is empty (user did not write anything)
-                    else {
-                      // insert task with formatted task notes into task table
-                      const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
-                      con.query(
-                        addTask,
-                        [taskName, taskDescription, taskNotes, taskID, taskPlan, taskAppAcronym, taskState, taskCreator, taskOwner, planColor],
-                        console.log("Created Task with no task notes.")
-                      )
-                    }
+                  // if task notes is empty (user did not write anything)
+                  else {
+                    // insert task with formatted task notes into task table
+                    const addTask = `INSERT INTO task VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`
+                    con.query(
+                      addTask,
+                      [Task_name, Task_description, Task_notes, taskID, Task_plan, Task_app_Acronym, Task_state, Task_creator, Task_owner, planColor],
+                      console.log("Created Task with no task notes.")
+                    )
+                  }
 
-                    // send to frontend
-                    const taskInfo = {
-                      taskName: taskName,
-                      taskDescription: taskDescription,
-                      taskNotes: taskNotes,
-                      taskID: taskID,
-                      taskPlan: taskPlan,
-                      taskAppAcronym: taskAppAcronym,
-                      taskState: taskState,
-                      taskCreator: taskCreator,
-                      taskOwner: taskOwner,
-                      planColor: planColor
-                    }
+                  // send to frontend
+                  const taskInfo = {
+                    Task_name: Task_name,
+                    Task_description: Task_description,
+                    Task_notes: Task_notes,
+                    Task_id: taskID,
+                    Task_plan: Task_plan,
+                    Task_app_Acronym: Task_app_Acronym,
+                    Task_state: Task_state,
+                    Task_creator: Task_creator,
+                    Task_owner: Task_owner,
+                    planColor: planColor
+                  }
 
-                    return resolve(taskInfo)
-                  })
-                }
-              })
+                  return resolve({ code: 200, Task_id: taskID })
+                })
+              }
             })
-          }
+          })
         }
       })
     }
   })
 }
 
-module.exports = { CreateTask }
+module.exports = { CreateTaskAPI }

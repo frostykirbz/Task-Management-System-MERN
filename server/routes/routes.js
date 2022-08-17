@@ -24,7 +24,8 @@ const { editTask } = require("../controllers/TaskUpdateController")
 const { handleMoveState } = require("../controllers/TaskMoveController")
 const { sendMail } = require("../controllers/TaskSendMailController")
 
-const { CreateTask } = require("../rest-api/CreateTask")
+/* ASSIGNMENT 3 */
+const { CreateTaskAPI } = require("../rest-api/CreateTask")
 
 /* LOGIN */
 router.route("/login").post(loginAuth)
@@ -51,6 +52,7 @@ router.route("/user/details").post(getUserDetails)
 /* USER - UPDATE */
 router.route("/user/update").post(editUser)
 
+/* ASSIGNMENT 2 */
 /* PROJECT LEAD - GET */
 router.route("/app").get(getApp)
 router.route("/user/app/:id").get(getDashboardApp)
@@ -81,6 +83,7 @@ router.route("/user/app/:id/plan").get(getPlan)
 /* SEND EMAIL */
 router.route("/sendMail").post(sendMail)
 
-router.route("/CreateTask").post(CreateTask)
+/* ASSIGNMENT 3 */
+router.route("/CreateTask").post(CreateTaskAPI)
 
 module.exports = router
