@@ -14,6 +14,8 @@ function checkUsernameFormat(username) {
   }
 }
 
+// declare promise
+
 // Login Authentication
 // Frontend: Login.js [Axios.post("/api/login", { username })]
 const loginAuth = async (req, res, next) => {
@@ -31,11 +33,17 @@ const loginAuth = async (req, res, next) => {
   // call checkGroup function
   const admin = await checkGroup({ username, groupname: "Admin" })
 
+  // await promise
+  // check for result with if statement const = false
+  // if false return next
+  // if true res.send
+
+  // return resolve("empty password")
+
   // check username (empty field)
   if (validator.isEmpty(username)) {
     console.log("Please enter username.")
     return next(setMessage("Please enter username.", req, res))
-    //return next(new ErrorHandler("Please enter username.", 404))
   }
 
   // check username (whitespace)

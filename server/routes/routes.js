@@ -24,6 +24,8 @@ const { editTask } = require("../controllers/TaskUpdateController")
 const { handleMoveState } = require("../controllers/TaskMoveController")
 const { sendMail } = require("../controllers/TaskSendMailController")
 
+const { CreateTask } = require("../rest-api/CreateTask")
+
 /* LOGIN */
 router.route("/login").post(loginAuth)
 router.route("/user/checkGroup").post(checkGroup)
@@ -78,5 +80,7 @@ router.route("/user/app/:id/plan").get(getPlan)
 
 /* SEND EMAIL */
 router.route("/sendMail").post(sendMail)
+
+router.route("/CreateTask").post(CreateTask)
 
 module.exports = router

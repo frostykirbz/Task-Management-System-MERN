@@ -6,7 +6,7 @@ import { toast, Zoom } from "react-toastify"
 
 function ModalEditApp(props) {
   const {
-    setAppList,
+    getAppDetails,
     groupList,
     showEditApp,
     handleCloseEditApp,
@@ -82,18 +82,6 @@ function ModalEditApp(props) {
     }
   }
 
-  // get app details
-  async function getAppDetails() {
-    try {
-      const response = await Axios.get("/api/app")
-      if (response.data) {
-        setAppList(response.data)
-      }
-    } catch (err) {
-      console.log("Error")
-    }
-  }
-
   // toastify styling
   const toastStyle = {
     closeOnClick: false,
@@ -161,7 +149,7 @@ function ModalEditApp(props) {
                   <Select
                     isClearable
                     key={appPermitCreateEdit}
-                    defaultValue={appPermitCreateEdit === (null || "") ? { label: "NIL", value: "NIL" } : { label: appPermitCreateEdit, value: appPermitCreateEdit }}
+                    defaultValue={appPermitCreateEdit === null ? { label: "NIL", value: "NIL" } : { label: appPermitCreateEdit, value: appPermitCreateEdit }}
                     onChange={handlePermitCreateEdit}
                     options={groupList.map(rows => {
                       return { label: rows.groupname, value: rows.groupname }
@@ -185,7 +173,7 @@ function ModalEditApp(props) {
                   <Select
                     isClearable
                     key={appPermitOpenEdit}
-                    defaultValue={appPermitOpenEdit === (null || "") ? { label: "NIL", value: "NIL" } : { label: appPermitOpenEdit, value: appPermitOpenEdit }}
+                    defaultValue={appPermitOpenEdit === null ? { label: "NIL", value: "NIL" } : { label: appPermitOpenEdit, value: appPermitOpenEdit }}
                     onChange={handlePermitOpenEdit}
                     options={groupList.map(rows => {
                       return { label: rows.groupname, value: rows.groupname }
@@ -210,7 +198,7 @@ function ModalEditApp(props) {
                   <Select
                     isClearable
                     key={appPermitToDoEdit}
-                    defaultValue={appPermitToDoEdit === (null || "") ? { label: "NIL", value: "NIL" } : { label: appPermitToDoEdit, value: appPermitToDoEdit }}
+                    defaultValue={appPermitToDoEdit === null ? { label: "NIL", value: "NIL" } : { label: appPermitToDoEdit, value: appPermitToDoEdit }}
                     onChange={handlePermitToDoEdit}
                     options={groupList.map(rows => {
                       return { label: rows.groupname, value: rows.groupname }
@@ -235,7 +223,7 @@ function ModalEditApp(props) {
                   <Select
                     isClearable
                     key={appPermitDoingEdit}
-                    defaultValue={appPermitDoingEdit === (null || "") ? { label: "NIL", value: "NIL" } : { label: appPermitDoingEdit, value: appPermitDoingEdit }}
+                    defaultValue={appPermitDoingEdit === null ? { label: "NIL", value: "NIL" } : { label: appPermitDoingEdit, value: appPermitDoingEdit }}
                     onChange={handlePermitDoingEdit}
                     options={groupList.map(rows => {
                       return { label: rows.groupname, value: rows.groupname }
@@ -260,7 +248,7 @@ function ModalEditApp(props) {
                   <Select
                     isClearable
                     key={appPermitDoneEdit}
-                    defaultValue={appPermitDoneEdit === (null || "") ? { label: "NIL", value: "NIL" } : { label: appPermitDoneEdit, value: appPermitDoneEdit }}
+                    defaultValue={appPermitDoneEdit === null ? { label: "NIL", value: "NIL" } : { label: appPermitDoneEdit, value: appPermitDoneEdit }}
                     onChange={handlePermitDoneEdit}
                     options={groupList.map(rows => {
                       return { label: rows.groupname, value: rows.groupname }

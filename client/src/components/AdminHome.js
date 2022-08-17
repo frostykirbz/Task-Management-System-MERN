@@ -368,7 +368,7 @@ function AdminHome() {
       />
 
       <ModalEditApp
-        setAppList={setAppList}
+        getAppDetails={getAppDetails}
         groupList={groupList}
         showEditApp={showEditApp}
         handleCloseEditApp={handleCloseEditApp}

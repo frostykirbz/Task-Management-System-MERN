@@ -64,38 +64,40 @@ function ModalViewApp(props) {
                 </Form.Group>
               </Col>
             </Row>
-            {/* App Permit Create */}
-            <Form.Group className="mb-3" id="AppPermitCreate">
-              <Form.Label>Permit Create</Form.Label>
-              <Form.Control value={appPermitCreateView} type="text" readOnly />
-            </Form.Group>
             <Row className="mb-3">
+              <Col>
+                {/* App Permit Create */}
+                <Form.Group className="mb-3" id="AppPermitCreate">
+                  <Form.Label>Permit Create</Form.Label>
+                  <Form.Control value={appPermitCreateView === null ? "NIL" : appPermitCreateView} type="text" readOnly />
+                </Form.Group>
+              </Col>
               <Col>
                 {/* App Permit Open */}
                 <Form.Group className="mb-3" id="AppPermitOpen">
                   <Form.Label>Permit Open</Form.Label>
-                  <Form.Control value={appPermitOpenView === "" ? "NIL" : appPermitOpenView} type="text" readOnly />
+                  <Form.Control value={appPermitOpenView === null ? "NIL" : appPermitOpenView} type="text" readOnly />
                 </Form.Group>
               </Col>
               <Col>
                 {/* App Permit To Do */}
                 <Form.Group className="mb-3" id="AppPermitToDo">
                   <Form.Label>Permit To Do</Form.Label>
-                  <Form.Control value={appPermitToDoView === "" ? "NIL" : appPermitToDoView} type="text" readOnly />
+                  <Form.Control value={appPermitToDoView === null ? "NIL" : appPermitToDoView} type="text" readOnly />
                 </Form.Group>
               </Col>
               <Col>
                 {/* App Permit Doing */}
                 <Form.Group className="mb-3" id="AppPermitDoing">
                   <Form.Label>Permit Doing</Form.Label>
-                  <Form.Control value={appPermitDoingView === "" ? "NIL" : appPermitDoingView} type="text" readOnly />
+                  <Form.Control value={appPermitDoingView === null ? "NIL" : appPermitDoingView} type="text" readOnly />
                 </Form.Group>
               </Col>
               <Col>
                 {/* App Permit Done */}
                 <Form.Group className="mb-3" id="AppPermitDone">
                   <Form.Label>Permit Done</Form.Label>
-                  <Form.Control value={appPermitDoneView === "" ? "NIL" : appPermitDoneView} type="text" readOnly />
+                  <Form.Control value={appPermitDoneView === null ? "NIL" : appPermitDoneView} type="text" readOnly />
                 </Form.Group>
               </Col>
             </Row>

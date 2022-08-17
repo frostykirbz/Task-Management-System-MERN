@@ -55,6 +55,24 @@ function ModalAddPlan(props) {
     theme: "colored"
   }
 
+  // date picker validation
+  let today = new Date()
+  let dd = today.getDate()
+  let mm = today.getMonth()
+  let yyyy = today.getFullYear()
+
+  // day of date
+  if (dd < 10) {
+    dd = "0" + dd
+  }
+
+  // month of date
+  if (mm < 10) {
+    mm = "0" + mm
+  }
+
+  today = yyyy + "-" + mm + "-" + dd
+
   return (
     <>
       <Modal show={showPlan} onHide={handleClosePlan} size="xl" aria-labelledby="modalAddPlan" className="ModalAddPlan">
@@ -100,14 +118,14 @@ function ModalAddPlan(props) {
                 {/* Plan Start Date */}
                 <Form.Group className="mb-3" id="PlanStartDate">
                   <Form.Label>Plan Start Date</Form.Label>
-                  <Form.Control value={planStartDate} onChange={e => setPlanStartDate(e.target.value)} type="date" placeholder="Plan Start Date" />
+                  <Form.Control value={planStartDate} min={today} max={planStartDate} onChange={e => setPlanStartDate(e.target.value)} type="date" placeholder="Plan Start Date" />
                 </Form.Group>
               </Col>
               <Col>
                 {/* Plan End Date */}
                 <Form.Group className="mb-3" id="PlanEndDate">
                   <Form.Label>Plan End Date</Form.Label>
-                  <Form.Control value={planEndDate} onChange={e => setPlanEndDate(e.target.value)} type="date" placeholder="Plan End Date" />
+                  <Form.Control value={planEndDate} min={today || planStartDate} onChange={e => setPlanEndDate(e.target.value)} type="date" placeholder="Plan End Date" />
                 </Form.Group>
               </Col>
             </Row>

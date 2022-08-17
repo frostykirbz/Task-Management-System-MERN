@@ -186,7 +186,7 @@ const addTask = (req, res, next) => {
                     )
 
                     // insert into task notes table
-                    const addTaskNotes =  `INSERT INTO tasknotes (Task_name, Task_plan, Task_app, Task_notes, Task_state, Task_owner, Task_updateDate) VALUES (?, ?, ?, ?, ?, ?, now())`
+                    const addTaskNotes = `INSERT INTO tasknotes (Task_name, Task_plan, Task_app, Task_notes, Task_state, Task_owner, Task_updateDate) VALUES (?, ?, ?, ?, ?, ?, now())`
                     con.query(addTaskNotes, [taskName, taskPlan, taskAppAcronym, taskNotes, taskState, taskOwner], console.log("Added task notes."))
                   }
 
