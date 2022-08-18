@@ -1,6 +1,6 @@
 var con = require("../config/config-database")
 
-function checkGroup({ username, groupname }) {
+function checkGroup(username, groupname) {
   return new Promise((resolve, reject) => {
     const groupcheck = `SELECT *
                         FROM accounts
@@ -13,7 +13,7 @@ function checkGroup({ username, groupname }) {
           return resolve(true)
         }
       }
-      return resolve(false)
+      return reject({ code: 4002 })
     })
   })
 }

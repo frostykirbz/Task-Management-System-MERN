@@ -13,61 +13,61 @@ function checkUsernameFormat(username) {
   }
 }
 
-// Check App Permit Create
-function checkAppPermitCreate(application) {
-  let permitCreate = ""
-  const appPermitCreate = `SELECT *
-                           FROM application 
-                           WHERE App_Acronym = ?`
-
-  con.query(appPermitCreate, [application], function (err, rows) {
-    if (err) throw err
-    if (rows.length > 0) {
-      permitCreate = rows[0].App_permit_Create
-    }
-
-    return permitCreate
-  })
-}
-
 // create task function (POSTMAN - POST METHOD)
 const CreateTaskAPI = async (req, res) => {
   try {
+    let jsonData = req.body
     // declare variables for Login and CreateTask
-    let createTaskInfo = req.body
-    let { Task_plan, Task_notes } = req.body
+    let createTaskInfo = {}
+    let Task_plan = ""
+    let Task_notes = ""
 
     // setting JSON keys to lower case
-    for (let key in req.body) {
-      createTaskInfo[key.toLowerCase()] = req.body[key]
+    for (let key in jsonData) {
+      createTaskInfo[key.toLowerCase()] = jsonData[key]
     }
 
     let username = createTaskInfo.username
     let Task_name = createTaskInfo.task_name
     let Task_description = createTaskInfo.task_description
-    let Task_app_Acronym = createTaskInfo.task_app_Acronym
+    let Task_app_Acronym = createTaskInfo.app_acronym
     let Task_state = "Open"
     let Task_creator = createTaskInfo.username
     let Task_owner = createTaskInfo.username
-    let permitCreate = checkAppPermitCreate(Task_app_Acronym)
 
-    console.log(permitCreate)
     // call all required promises (login/checkgroup/createtask)
     const Login = await login(createTaskInfo)
-    const userGroup = await checkGroup(username, permitCreate)
-    const success = await createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, Task_creator, Task_owner)
-
-    console.log(userGroup)
-
+    console.log(Login)
     // Login: if user is authenticated (success)
     if (Login.code === 200) {
       console.log("login")
       try {
+        const PermitCreate = await checkAppPermitCreate(Task_app_Acronym)
+        console.log(PermitCreate)
         // Check App Permit Create: if user is in app permit create (success)
-
-        // Create Task: if create task validation errors are none (success)
-        if (success.code === 200) {
-          res.send({ success })
+        if (PermitCreate.code === 200) {
+          console.log("permit create")
+          let permitcreate = PermitCreate.permitCreate
+          try {
+            const UserGroup = await checkGroup(username, permitcreate)
+            console.log("usergroup")
+            if (UserGroup) {
+              console.log("correct usergroup")
+              try {
+                const success = await createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, Task_creator, Task_owner)
+                console.log("create task")
+                // Create Task: if create task validation errors are none (success)
+                if (success.code === 200) {
+                  console.log("add task successfully")
+                  res.send({ success })
+                }
+              } catch (error) {
+                res.send({ error })
+              }
+            }
+          } catch (error) {
+            res.send({ error })
+          }
         }
       } catch (error) {
         // Create Task: error (fail)
@@ -90,13 +90,7 @@ function login(JSON) {
     let isactive = ""
     let usergroup = ""
 
-    if (
-      !JSON.hasOwnProperty("username") ||
-      !JSON.hasOwnProperty("password") ||
-      !JSON.hasOwnProperty("task_name") ||
-      !JSON.hasOwnProperty("task_description") ||
-      !JSON.hasOwnProperty("task_app_acronym")
-    ) {
+    if (!JSON.hasOwnProperty("username") || !JSON.hasOwnProperty("password") || !JSON.hasOwnProperty("task_name") || !JSON.hasOwnProperty("task_description") || !JSON.hasOwnProperty("app_acronym")) {
       return reject({ code: 4008 })
     }
 
@@ -125,7 +119,7 @@ function login(JSON) {
                           FROM accounts
                           WHERE username = ?`
 
-      con.query(checkLogin, [username], async function (err, rows) {
+      con.query(checkLogin, [username], function (err, rows) {
         if (err) reject(err)
 
         if (rows.length > 0) {
@@ -137,7 +131,7 @@ function login(JSON) {
                                FROM accounts
                                WHERE accounts.username = ?`
 
-            con.query(checkUser, [username], async function (err, rows) {
+            con.query(checkUser, [username], function (err, rows) {
               if (err) reject(err)
 
               if (rows.length > 0) {
@@ -187,6 +181,15 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
     let rNumber = 0
     let taskID = ""
     let formattedTaskNotes = ""
+
+    console.log("1" + Task_name)
+    console.log("2" + Task_description)
+    console.log("3" + Task_notes)
+    console.log("4" + Task_app_Acronym)
+    console.log("5" + Task_plan)
+    console.log("6" + Task_state)
+    console.log("7" + Task_creator)
+    console.log("8" + Task_owner)
 
     // new date object
     let date_ob = new Date()
@@ -290,7 +293,6 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
                     rNumber = rows[0].App_Rnumber + 1
                     taskID = Task_app_Acronym + "_" + rNumber
                   } else {
-                    console.log("Here 666")
                     return reject({ msg: "Invalid Task App Acronym", code: 4005 })
                   }
 
@@ -352,8 +354,8 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
               else {
                 // get app rnumber
                 const getAppRNumber = `SELECT App_Rnumber
-                                         FROM application
-                                         WHERE App_Acronym = ?`
+                                       FROM application
+                                       WHERE App_Acronym = ?`
 
                 con.query(getAppRNumber, [Task_app_Acronym], function (err, rows) {
                   if (err) reject(err)
@@ -417,6 +419,26 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
         }
       })
     }
+  })
+}
+
+// Check App Permit Create (PROMISE)
+function checkAppPermitCreate(application) {
+  return new Promise((resolve, reject) => {
+    let permitCreate = ""
+    const appPermitCreate = `SELECT *
+                             FROM application 
+                             WHERE App_Acronym = ?`
+
+    con.query(appPermitCreate, [application], function (err, rows) {
+      if (err) reject(err)
+      if (rows.length > 0) {
+        permitCreate = rows[0].App_permit_Create
+        return resolve({ code: 200, permitCreate: permitCreate })
+      } else {
+        return reject({ code: 4002 })
+      }
+    })
   })
 }
 

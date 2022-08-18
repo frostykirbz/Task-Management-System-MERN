@@ -31,7 +31,7 @@ const loginAuth = async (req, res, next) => {
   password = strip(password)
 
   // call checkGroup function
-  const admin = await checkGroup({ username, groupname: "Admin" })
+  const admin = await checkGroup(username, "Admin")
 
   // await promise
   // check for result with if statement const = false
