@@ -16,15 +16,15 @@ function checkUsernameFormat(username) {
 // create task function (POSTMAN - POST METHOD)
 const CreateTaskAPI = async (req, res) => {
   try {
-    let jsonData = req.body
+    let JSON = req.body
     // declare variables for Login and CreateTask
     let createTaskInfo = {}
     let Task_plan = ""
     let Task_notes = ""
 
     // setting JSON keys to lower case
-    for (let key in jsonData) {
-      createTaskInfo[key.toLowerCase()] = jsonData[key]
+    for (let key in JSON) {
+      createTaskInfo[key.toLowerCase()] = JSON[key]
     }
 
     let username = createTaskInfo.username
@@ -425,6 +425,11 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
 // Check App Permit Create (PROMISE)
 function checkAppPermitCreate(application) {
   return new Promise((resolve, reject) => {
+    // check empty task app acronym
+    if (validator.isEmpty(application)) {
+      return reject({ msg: "empty App", code: 4006 })
+    }
+
     let permitCreate = ""
     const appPermitCreate = `SELECT *
                              FROM application 
@@ -436,7 +441,7 @@ function checkAppPermitCreate(application) {
         permitCreate = rows[0].App_permit_Create
         return resolve({ code: 200, permitCreate: permitCreate })
       } else {
-        return reject({ code: 4002 })
+        return reject({ msg: "invalid app", code: 4005 })
       }
     })
   })
