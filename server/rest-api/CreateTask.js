@@ -16,8 +16,8 @@ function checkUsernameFormat(username) {
 // create task function (POSTMAN - POST METHOD)
 const CreateTaskAPI = async (req, res) => {
   try {
-    let JSON = req.body
     // declare variables for Login and CreateTask
+    let JSON = req.body
     let createTaskInfo = {}
     let Task_plan = ""
     let Task_notes = ""
