@@ -26,6 +26,8 @@ const { sendMail } = require("../controllers/TaskSendMailController")
 
 /* ASSIGNMENT 3 */
 const { CreateTaskAPI } = require("../rest-api/CreateTask")
+const { GetTaskbyStateAPI } = require("../rest-api/GetTaskbyState")
+const { PromoteTask2DoneAPI } = require("../rest-api/PromoteTaskToDone")
 
 /* LOGIN */
 router.route("/login").post(loginAuth)
@@ -85,5 +87,7 @@ router.route("/sendMail").post(sendMail)
 
 /* ASSIGNMENT 3 */
 router.route("/CreateTask").post(CreateTaskAPI)
+router.route("/GetTaskbyState").get(GetTaskbyStateAPI)
+router.route("/PromoteTask2Done").post(PromoteTask2DoneAPI)
 
 module.exports = router

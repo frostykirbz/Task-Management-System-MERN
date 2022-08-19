@@ -2,7 +2,6 @@ const con = require("../config/config-database")
 const strip = require("strip")
 const bcrypt = require("bcrypt")
 const validator = require("validator")
-const { checkGroup } = require("../controllers/GroupCheckController")
 
 function checkUsernameFormat(username) {
   var whitespace = /^\S*$/
@@ -13,8 +12,8 @@ function checkUsernameFormat(username) {
   }
 }
 
-// create task function (POSTMAN - POST METHOD)
-const GetTaskbyState = async (req, res) => {
+// get task by state function (POSTMAN - GET METHOD)
+const GetTaskbyStateAPI = async (req, res) => {
   try {
     // declare variables for Login and CreateTask
     let JSON = req.body
@@ -27,21 +26,28 @@ const GetTaskbyState = async (req, res) => {
 
     let Task_state = getTaskByStateInfo.task_state
 
-    // call all required promises (login/checkgroup/createtask)
-    const Login = await login(createTaskInfo)
-    console.log(Login)
+    // call all required promises (login/checktaskstate)
+    const Login = await login(getTaskByStateInfo)
+
     // Login: if user is authenticated (success)
     if (Login.code === 200) {
       console.log("login")
       try {
-        // Check App Permit Create: if user is in app permit create (success)
+        // Check Task state: (success)
+        const success = await gettaskbystate(Task_state)
+
+        if (success.code === 200) {
+          console.log("task state")
+          res.send(success)
+        }
       } catch (error) {
-        // Login: error (fail)
-        res.send({ error })
+        // Check Task state: error (fail)
+        res.send(error)
       }
     }
   } catch (error) {
-    res.send({ error })
+    // Login: error (fail)
+    res.send(error)
   }
 }
 
@@ -139,17 +145,44 @@ function login(JSON) {
   })
 }
 
-function gettaskstate(Task_state) {
+// Get Task by State (PROMISE)
+function gettaskbystate(Task_state) {
   return new Promise((resolve, reject) => {
-    // if check for validation (reject with code 4001-4008)
-    // E.g. return reject({code: 4006 })
-    // if no validation errors (resolve with code 200)
-    // E.g. return resolve({code: 200 })
-
+    // check for empty task state
     if (validator.isEmpty(Task_state)) {
-      return reject({ msg: "task state missing", code: 4006 })
+      return reject({ msg: "empty task state", code: 4006 })
+    }
+
+    // check for invalid task state
+    if (
+      Task_state.toLowerCase() === "open" ||
+      Task_state.toLowerCase() === "to do" ||
+      Task_state.toLowerCase() === "doing" ||
+      Task_state.toLowerCase() === "done" ||
+      Task_state.toLowerCase() === "close"
+    ) {
+      const getTask = `SELECT * 
+                       FROM task
+                       WHERE LOWER( Task_state ) = ?`
+
+      con.query(getTask, [Task_state.toLowerCase()], function (err, rows) {
+        if (err) reject(err)
+
+        // if there are tasks
+        if (rows.length > 0) {
+          return resolve({ code: 200, data: rows })
+        }
+        // if there are no task
+        else {
+          return resolve({ code: 200, data: [] })
+        }
+      })
+    }
+    // if invalid task state
+    else {
+      return reject({ msg: "invalid task state", code: 4005 })
     }
   })
 }
 
-module.exports = { GetTaskbyState }
+module.exports = { GetTaskbyStateAPI }

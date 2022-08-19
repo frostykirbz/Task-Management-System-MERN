@@ -32,12 +32,10 @@ const CreateTaskAPI = async (req, res) => {
     let Task_description = createTaskInfo.task_description
     let Task_app_Acronym = createTaskInfo.app_acronym
     let Task_state = "Open"
-    let Task_creator = createTaskInfo.username
-    let Task_owner = createTaskInfo.username
 
     // call all required promises (login/checkgroup/createtask)
     const Login = await login(createTaskInfo)
-    console.log(Login)
+
     // Login: if user is authenticated (success)
     if (Login.code === 200) {
       console.log("login")
@@ -54,29 +52,31 @@ const CreateTaskAPI = async (req, res) => {
             if (UserGroup) {
               console.log("correct usergroup")
               try {
-                const success = await createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, Task_creator, Task_owner)
+                const success = await createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, username)
                 console.log("create task")
                 // Create Task: if create task validation errors are none (success)
                 if (success.code === 200) {
                   console.log("add task successfully")
-                  res.send({ success })
+                  res.send(success)
                 }
               } catch (error) {
-                res.send({ error })
+                // Create Task: error (fail)
+                res.send(error)
               }
             }
           } catch (error) {
-            res.send({ error })
+            // User Group === App Permit Create: error (fail)
+            res.send(error)
           }
         }
       } catch (error) {
-        // Create Task: error (fail)
-        res.send({ error })
+        // Get App Permit Create: error (fail)
+        res.send(error)
       }
     }
   } catch (error) {
     // Login: error (fail)
-    res.send({ error })
+    res.send(error)
   }
 }
 
@@ -175,8 +175,10 @@ function login(JSON) {
 }
 
 // Create Task (PROMISE)
-function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, Task_creator, Task_owner) {
+function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, Task_plan, Task_state, username) {
   return new Promise((resolve, reject) => {
+    let Task_creator = username
+    let Task_owner = username
     let planColor = ""
     let rNumber = 0
     let taskID = ""
