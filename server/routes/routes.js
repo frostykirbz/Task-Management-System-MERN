@@ -86,8 +86,8 @@ router.route("/user/app/:id/plan").get(getPlan)
 router.route("/sendMail").post(sendMail)
 
 /* ASSIGNMENT 3 */
-router.route("/CreateTask").post(CreateTaskAPI)
-router.route("/GetTaskbyState").get(GetTaskbyStateAPI)
-router.route("/PromoteTask2Done").post(PromoteTask2DoneAPI)
+router.route("/create-new-task").post(CreateTaskAPI)
+router.route("/get-task-by-state").get(GetTaskbyStateAPI)
+router.route("/promote-task-to-done").post(PromoteTask2DoneAPI)
 
 module.exports = router
