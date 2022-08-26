@@ -1,5 +1,23 @@
 var con = require("../config/config-database")
 
+function CheckGroup(username, groupname) {
+  return new Promise((resolve, reject) => {
+    const groupcheck = `SELECT *
+                        FROM accounts
+                        WHERE username = ?`
+
+    con.query(groupcheck, [username], function (err, rows) {
+      if (err) reject(err)
+      if (rows.length > 0) {
+        if (rows[0].usergroup.includes(groupname)) {
+          return resolve(true)
+        }
+      }
+      return resolve(false)
+    })
+  })
+}
+
 function checkGroup(username, groupname) {
   return new Promise((resolve, reject) => {
     const groupcheck = `SELECT *
@@ -32,4 +50,4 @@ const checkUserGroup = (req, res, next) => {
   })
 }
 
-module.exports = { checkGroup, checkUserGroup }
+module.exports = { CheckGroup, checkGroup, checkUserGroup }

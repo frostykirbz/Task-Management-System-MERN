@@ -3,7 +3,7 @@ const strip = require("strip")
 const bcrypt = require("bcrypt")
 const validator = require("validator")
 const setMessage = require("../message")
-const { checkGroup } = require("./GroupCheckController")
+const { CheckGroup } = require("./GroupCheckController")
 
 function checkUsernameFormat(username) {
   var whitespace = /^\S*$/
@@ -31,12 +31,7 @@ const loginAuth = async (req, res, next) => {
   password = strip(password)
 
   // call checkGroup function
-  const admin = await checkGroup(username, "Admin")
-
-  // await promise
-  // check for result with if statement const = false
-  // if false return next
-  // if true res.send
+  const admin = await CheckGroup(username, "Admin")
 
   // return resolve("empty password")
 
