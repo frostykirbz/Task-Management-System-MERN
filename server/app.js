@@ -30,7 +30,7 @@ app.use("/api", routeRoute)
 
 // if not within routes, send 4004 error to postman (REST API)
 app.use("*", function checkroute(req, res) {
-  res.send({ error: { code: 4004 } })
+  res.send({ code: 4004 })
 })
 
 // bind and listen connections on specified host and PORT

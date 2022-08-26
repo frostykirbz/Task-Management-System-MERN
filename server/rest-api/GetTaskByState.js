@@ -72,17 +72,17 @@ function login(JSON) {
 
     // check username (empty field)
     if (validator.isEmpty(username)) {
-      return reject({ msg: "Empty Username", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     // check username (whitespace)
     if (!checkUsernameFormat(username)) {
-      return reject({ msg: "Whitespace Username", code: 4005 })
+      return reject({ code: 4005 })
     }
 
     // check password (empty field)
     if (validator.isEmpty(password)) {
-      return reject({ msg: "Empty Password", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     if (username && password) {
@@ -117,7 +117,7 @@ function login(JSON) {
                 // check if user is inactive
                 // if user is inactive (deny login)
                 if (isactive == "Inactive") {
-                  return reject({ msg: "Deny Permission", code: 4002 })
+                  return reject({ code: 4002 })
                 }
                 // if user is active (approve login)
                 else if (isactive == "Active") {
@@ -131,14 +131,14 @@ function login(JSON) {
                   return resolve({ code: 200 })
                 }
               } else {
-                return reject({ msg: "Invalid Login", code: 4001 })
+                return reject({ code: 4001 })
               }
             })
           } else {
-            return reject({ msg: "Invalid Login", code: 4001 })
+            return reject({ code: 4001 })
           }
         } else {
-          return reject({ msg: "Invalid Login", code: 4001 })
+          return reject({ code: 4001 })
         }
       })
     }
@@ -150,7 +150,7 @@ function gettaskbystate(Task_state) {
   return new Promise((resolve, reject) => {
     // check for empty task state
     if (validator.isEmpty(Task_state)) {
-      return reject({ msg: "empty task state", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     // check for invalid task state
@@ -180,7 +180,7 @@ function gettaskbystate(Task_state) {
     }
     // if invalid task state
     else {
-      return reject({ msg: "invalid task state", code: 4005 })
+      return reject({ code: 4005 })
     }
   })
 }

@@ -101,17 +101,17 @@ function login(JSON) {
 
     // check username (empty field)
     if (validator.isEmpty(username)) {
-      return reject({ msg: "Empty Username", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     // check username (whitespace)
     if (!checkUsernameFormat(username)) {
-      return reject({ msg: "Whitespace Username", code: 4005 })
+      return reject({ code: 4005 })
     }
 
     // check password (empty field)
     if (validator.isEmpty(password)) {
-      return reject({ msg: "Empty Password", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     if (username && password) {
@@ -146,7 +146,7 @@ function login(JSON) {
                 // check if user is inactive
                 // if user is inactive (deny login)
                 if (isactive == "Inactive") {
-                  return reject({ msg: "Deny Permission", code: 4002 })
+                  return reject({ code: 4002 })
                 }
                 // if user is active (approve login)
                 else if (isactive == "Active") {
@@ -160,14 +160,14 @@ function login(JSON) {
                   return resolve({ code: 200 })
                 }
               } else {
-                return reject({ msg: "Invalid Login", code: 4001 })
+                return reject({ code: 4001 })
               }
             })
           } else {
-            return reject({ msg: "Invalid Login", code: 4001 })
+            return reject({ code: 4001 })
           }
         } else {
-          return reject({ msg: "Invalid Login", code: 4001 })
+          return reject({ code: 4001 })
         }
       })
     }
@@ -231,7 +231,7 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
 
     // check for empty task name
     if (validator.isEmpty(Task_name)) {
-      return reject({ msg: "Empty task name", code: 4006 })
+      return reject({ code: 4006 })
     }
     // if task name is not empty
     else {
@@ -243,13 +243,13 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
         if (err) reject(err)
         // if task name exists in database (duplicated task name)
         if (rows.length > 0) {
-          return reject({ msg: "Duplicated Taskname", code: 4003 })
+          return reject({ code: 4003 })
         }
         // if task name does not exist in database (can use this task name)
         else {
           // check for empty task app acronym
           if (validator.isEmpty(Task_app_Acronym)) {
-            return reject({ msg: "Empty Task App Acronym", code: 4006 })
+            return reject({ code: 4006 })
           }
 
           // check for empty task plan
@@ -295,7 +295,7 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
                     rNumber = rows[0].App_Rnumber + 1
                     taskID = Task_app_Acronym + "_" + rNumber
                   } else {
-                    return reject({ msg: "Invalid Task App Acronym", code: 4005 })
+                    return reject({ code: 4005 })
                   }
 
                   // check for added task notes
@@ -367,7 +367,7 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
                     rNumber = rows[0].App_Rnumber
                     taskID = Task_app_Acronym + "_" + rNumber
                   } else {
-                    return reject({ msg: "Invalid Task App Acronym", code: 4005 })
+                    return reject({ code: 4005 })
                   }
 
                   // check for added task notes
@@ -429,7 +429,7 @@ function checkAppPermitCreate(application) {
   return new Promise((resolve, reject) => {
     // check empty task app acronym
     if (validator.isEmpty(application)) {
-      return reject({ msg: "empty App", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     let permitCreate = ""
@@ -443,7 +443,7 @@ function checkAppPermitCreate(application) {
         permitCreate = rows[0].App_permit_Create
         return resolve({ code: 200, permitCreate: permitCreate })
       } else {
-        return reject({ msg: "invalid app", code: 4005 })
+        return reject({ code: 4005 })
       }
     })
   })

@@ -2,6 +2,7 @@ const con = require("../config/config-database")
 const strip = require("strip")
 const bcrypt = require("bcrypt")
 const validator = require("validator")
+const nodemailer = require("nodemailer")
 const { checkGroup } = require("../controllers/GroupCheckController")
 
 function checkUsernameFormat(username) {
@@ -97,17 +98,17 @@ function login(JSON) {
 
     // check username (empty field)
     if (validator.isEmpty(username)) {
-      return reject({ msg: "Empty Username", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     // check username (whitespace)
     if (!checkUsernameFormat(username)) {
-      return reject({ msg: "Whitespace Username", code: 4005 })
+      return reject({ code: 4005 })
     }
 
     // check password (empty field)
     if (validator.isEmpty(password)) {
-      return reject({ msg: "Empty Password", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     if (username && password) {
@@ -142,7 +143,7 @@ function login(JSON) {
                 // check if user is inactive
                 // if user is inactive (deny login)
                 if (isactive == "Inactive") {
-                  return reject({ msg: "Deny Permission", code: 4002 })
+                  return reject({ code: 4002 })
                 }
                 // if user is active (approve login)
                 else if (isactive == "Active") {
@@ -156,14 +157,14 @@ function login(JSON) {
                   return resolve({ code: 200 })
                 }
               } else {
-                return reject({ msg: "Invalid Login", code: 4001 })
+                return reject({ code: 4001 })
               }
             })
           } else {
-            return reject({ msg: "Invalid Login", code: 4001 })
+            return reject({ code: 4001 })
           }
         } else {
-          return reject({ msg: "Invalid Login", code: 4001 })
+          return reject({ code: 4001 })
         }
       })
     }
@@ -180,6 +181,11 @@ function promotetask(Task_name, Task_state, Task_owner) {
     let previousTaskState = ""
     let formattedTaskNotes = ""
     let notesArray = []
+
+    // send mail variables
+    let taskOwnerEmail = ""
+    let email = ""
+    let usergroup = false
 
     // new date object
     let date_ob = new Date()
@@ -280,12 +286,62 @@ function promotetask(Task_name, Task_state, Task_owner) {
           })
         }
 
+        // send mail
+        const transport = nodemailer.createTransport({
+          host: process.env.MAIL_HOST,
+          port: process.env.MAIL_PORT,
+          auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS
+          }
+        })
+
+        const getAccountEmail = `SELECT * 
+                                 FROM accounts`
+
+        const getAccount = `SELECT * 
+                            FROM accounts 
+                            WHERE username = ?`
+
+        con.query(getAccount, [Task_owner], function (err, rows) {
+          if (err) reject(err)
+          if (rows.length > 0) {
+            taskOwnerEmail = rows[0].email
+          }
+
+          con.query(getAccountEmail, async function (err, rows) {
+            if (err) reject(err)
+            if (rows.length > 0) {
+              for (var i = 0; i < rows.length; i++) {
+                email = rows[i].email
+                usergroup = rows[i].usergroup.includes("Project Lead")
+
+                if (usergroup) {
+                  await transport.sendMail({
+                    from: taskOwnerEmail,
+                    to: email,
+                    subject: "TMS Task Notification",
+                    html: `
+                          <h2>Your task is now completed!</h2>
+                          <hr/>
+                          <p>Dear ${rows[i].username},</p>
+                          <p>${Task_owner} has completed task ${Task_name} in Application ${Task_app_Acronym}.</p>
+                          <br/>
+                          <p><small><i>This is an automated email. Do not reply this email.</i></small></p>
+                      `
+                  })
+                }
+              }
+            }
+          })
+        })
+
         console.log("Task is moved to another state.")
         return resolve({ code: 200 })
       }
       // if task (task state: doing) does not exist in database
       else {
-        return reject({ msg: "no task", code: 4005 })
+        return reject({ code: 4005 })
       }
     })
   })
@@ -296,10 +352,11 @@ function checkAppPermitDoing(task) {
   return new Promise((resolve, reject) => {
     // check empty task app acronym
     if (validator.isEmpty(task)) {
-      return reject({ msg: "empty task name", code: 4006 })
+      return reject({ code: 4006 })
     }
 
     let Task_app_Acronym = ""
+    let Task_state = ""
     let permitDoing = ""
     const getTaskApp = `SELECT *
                         FROM task
@@ -309,6 +366,12 @@ function checkAppPermitDoing(task) {
       if (err) reject(err)
       if (rows.length > 0) {
         Task_app_Acronym = rows[0].Task_app_Acronym
+        Task_state = rows[0].Task_state
+
+        // check for valid task state but not "doing"
+        if (Task_state.toLowerCase() === "open" || Task_state.toLowerCase() === "to do" || Task_state.toLowerCase() === "done" || Task_state.toLowerCase() === "close") {
+          return reject({ code: 4007 })
+        }
 
         const appPermitDoing = `SELECT *
                                 FROM application
@@ -320,11 +383,11 @@ function checkAppPermitDoing(task) {
             permitDoing = rows[0].App_permit_Doing
             return resolve({ code: 200, permitDoing: permitDoing })
           } else {
-            return reject({ msg: "invalid app", code: 4005 })
+            return reject({ code: 4005 })
           }
         })
       } else {
-        return reject({ msg: "invalid task", code: 4005 })
+        return reject({ code: 4005 })
       }
     })
   })
