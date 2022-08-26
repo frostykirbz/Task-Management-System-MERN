@@ -26,6 +26,9 @@ const GetTaskbyStateAPI = async (req, res) => {
 
     let Task_state = getTaskByStateInfo.task_state
 
+    // remove all leading and trailing spaces and tabs
+    Task_state = strip(Task_state)
+
     // call all required promises (login/checktaskstate)
     const Login = await login(getTaskByStateInfo)
 

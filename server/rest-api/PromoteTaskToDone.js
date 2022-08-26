@@ -30,6 +30,9 @@ const PromoteTask2DoneAPI = async (req, res) => {
     let Task_name = promoteTaskToDoneInfo.task_name
     let Task_state = "Done"
 
+    // remove all leading and trailing spaces and tabs
+    Task_name = strip(Task_name)
+
     // call all required promises (login/checkgroup/promotetask)
     const Login = await login(promoteTaskToDoneInfo)
 

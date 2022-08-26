@@ -33,6 +33,11 @@ const CreateTaskAPI = async (req, res) => {
     let Task_app_Acronym = createTaskInfo.app_acronym
     let Task_state = "Open"
 
+    // remove all leading and trailing spaces and tabs
+    Task_name = strip(Task_name)
+    Task_app_Acronym = strip(Task_app_Acronym)
+    Task_description = strip(Task_description)
+
     // call all required promises (login/checkgroup/createtask)
     const Login = await login(createTaskInfo)
 
@@ -220,6 +225,7 @@ function createtask(Task_name, Task_description, Task_notes, Task_app_Acronym, T
 
     // remove all leading and trailing spaces and tabs
     Task_name = strip(Task_name)
+    Task_app_Acronym = strip(Task_app_Acronym)
     Task_description = strip(Task_description)
     Task_notes = strip(Task_notes)
 
