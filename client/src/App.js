@@ -35,6 +35,7 @@ function App() {
           <Route path="/admin-group-update/:id" element={<AdminGroupEdit />} />
           <Route path="/user-update" element={<UserEdit />} />
           <Route path="/dashboard/:id" element={<DashBoard />} />
+          <Route path="*" element={<h1 style={{ marginTop: "20%", textAlign: "center", color: "black" }}>Page 404! There's nothing here!</h1>} />
         </Route>
       </Routes>
     </BrowserRouter>

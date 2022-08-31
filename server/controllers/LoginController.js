@@ -2,6 +2,7 @@ const con = require("../config/config-database")
 const strip = require("strip")
 const bcrypt = require("bcrypt")
 const validator = require("validator")
+// const jwt = require("jsonwebtoken")
 const setMessage = require("../message")
 const { CheckGroup } = require("./GroupCheckController")
 
@@ -14,7 +15,21 @@ function checkUsernameFormat(username) {
   }
 }
 
-// declare promise
+// function generateAccessToken(user) {
+//   return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15s" })
+// }
+
+// function authenticateToken(req, res, next) {
+//   const authHeader = req.headers["authorization"]
+//   const token = authHeader && authHeader.split(" ")[1]
+//   if (token == null) return next(setMessage("Unable to authenticate.", req, res))
+
+//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+//     if (err) return next(setMessage("Unable to verify.", req, res))
+//     req.user = user
+//     next()
+//   })
+// }
 
 // Login Authentication
 // Frontend: Login.js [Axios.post("/api/login", { username })]
